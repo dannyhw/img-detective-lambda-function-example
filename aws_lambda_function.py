@@ -20,7 +20,7 @@ def lambda_handler(event, context):
     Handler for an AWS lambda function which is triggered by an object being
     created in an S3 bucket, hashes will be generated for that image and
     printed.
-    
+
     Args:
         event: dict containing information on the create object event
         context: LambdaContext object with information (unused)
@@ -33,7 +33,7 @@ def lambda_handler(event, context):
     bucket = event['Records'][0]['s3']['bucket']['name']
     # get s3 object key
     key = urllib.unquote_plus(event[
-            'Records'][0]['s3']['object']['key'].encode('utf8'))
+        'Records'][0]['s3']['object']['key'].encode('utf8'))
     try:
         # download file into /tmp so we can work with it
         S3_CLIENT.download_file(Bucket=bucket, Key=key,
