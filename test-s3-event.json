@@ -1,0 +1,14 @@
+{
+    "Records": [
+        {
+            "s3": {
+                "object": {
+                    "key": "testimage2.png"
+                },
+                "bucket": {
+                    "name": "dannyhw-lambda-functions"
+                }
+            }
+        }
+    ]
+}
