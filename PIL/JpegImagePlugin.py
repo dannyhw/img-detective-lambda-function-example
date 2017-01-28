@@ -32,6 +32,8 @@
 # See the README file for information on usage and redistribution.
 #
 
+from __future__ import print_function
+
 import array
 import struct
 import io
@@ -316,7 +318,7 @@ class JpegImageFile(ImageFile.ImageFile):
 
             if i in MARKER:
                 name, description, handler = MARKER[i]
-                # print hex(i), name, description
+                # print(hex(i), name, description)
                 if handler is not None:
                     handler(self, i)
                 if i == 0xFFDA:  # start of scan
@@ -341,6 +343,10 @@ class JpegImageFile(ImageFile.ImageFile):
         if len(self.tile) != 1:
             return
 
+        # Protect from second call
+        if self.decoderconfig:
+            return
+
         d, e, o, a = self.tile[0]
         scale = 0
 
@@ -349,7 +355,7 @@ class JpegImageFile(ImageFile.ImageFile):
             a = mode, ""
 
         if size:
-            scale = max(self.size[0] // size[0], self.size[1] // size[1])
+            scale = min(self.size[0] // size[0], self.size[1] // size[1])
             for s in [8, 4, 2, 1]:
                 if scale >= s:
                     break
@@ -408,7 +414,7 @@ def _fixup_dict(src_dict):
         except: pass
         return value
 
-    return dict([(k, _fixup(v)) for k, v in src_dict.items()])
+    return {k: _fixup(v) for k, v in src_dict.items()}
 
 
 def _getexif(self):
@@ -488,7 +494,7 @@ def _getmp(self):
         rawmpentries = mp[0xB002]
         for entrynum in range(0, quant):
             unpackedentry = unpack_from(
-                '{0}LLLHH'.format(endianness), rawmpentries, entrynum * 16)
+                '{}LLLHH'.format(endianness), rawmpentries, entrynum * 16)
             labels = ('Attribute', 'Size', 'DataOffset', 'EntryNo1',
                       'EntryNo2')
             mpentry = dict(zip(labels, unpackedentry))
@@ -712,8 +718,11 @@ def _save(im, fp, filename):
     # https://github.com/matthewwithanm/django-imagekit/issues/50
     bufsize = 0
     if optimize or progressive:
+        # CMYK can be bigger
+        if im.mode == 'CMYK':
+            bufsize = 4 * im.size[0] * im.size[1]
         # keep sets quality to 0, but the actual value may be high.
-        if quality >= 95 or quality == 0:
+        elif quality >= 95 or quality == 0:
             bufsize = 2 * im.size[0] * im.size[1]
         else:
             bufsize = im.size[0] * im.size[1]

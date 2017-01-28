@@ -46,7 +46,7 @@ class _imaging_not_installed(object):
 
 
 # Limit to around a quarter gigabyte for a 24 bit (3 bpp) image
-MAX_IMAGE_PIXELS = int(1024 * 1024 * 1024 / 4 / 3)
+MAX_IMAGE_PIXELS = int(1024 * 1024 * 1024 // 4 // 3)
 
 try:
     # give Tk a chance to set up the environment, in case we're
@@ -67,7 +67,7 @@ try:
     from PIL import _imaging as core
     if PILLOW_VERSION != getattr(core, 'PILLOW_VERSION', None):
         raise ImportError("The _imaging extension was built for another "
-                          " version of Pillow or PIL")
+                          "version of Pillow or PIL")
 
 except ImportError as v:
     core = _imaging_not_installed()
@@ -530,8 +530,6 @@ class Image(object):
         new.info = self.info.copy()
         return new
 
-    _makeself = _new  # compatibility
-
     # Context Manager Support
     def __enter__(self):
         return self
@@ -879,7 +877,7 @@ class Image(object):
                     trns_im = Image()._new(core.new(self.mode, (1, 1)))
                     if self.mode == 'P':
                         trns_im.putpalette(self.palette)
-                        if type(t) == tuple:
+                        if isinstance(t, tuple):
                             try:
                                 t = trns_im.palette.getcolor(t)
                             except:
@@ -997,7 +995,7 @@ class Image(object):
                     "only RGB or L mode images can be quantized to a palette"
                     )
             im = self.im.convert("P", 1, palette.im)
-            return self._makeself(im)
+            return self._new(im)
 
         return self._new(self.im.quantize(colors, method, kmeans))
 
@@ -1307,8 +1305,7 @@ class Image(object):
             box = None
 
         if box is None:
-            # cover all of self
-            box = (0, 0) + self.size
+            box = (0, 0)
 
         if len(box) == 2:
             # upper left corner given; get size from image or mask
@@ -1321,7 +1318,7 @@ class Image(object):
                 raise ValueError(
                     "cannot determine region size; use 4-item box"
                     )
-            box = box + (box[0]+size[0], box[1]+size[1])
+            box += (box[0]+size[0], box[1]+size[1])
 
         if isStringType(im):
             from PIL import ImageColor
@@ -1545,7 +1542,7 @@ class Image(object):
 
         size = tuple(size)
         if self.size == size:
-            return self._new(self.im)
+            return self.copy()
 
         if self.mode in ("1", "P"):
             resample = NEAREST
@@ -1558,7 +1555,7 @@ class Image(object):
 
         return self._new(self.im.resize(size, resample))
 
-    def rotate(self, angle, resample=NEAREST, expand=0):
+    def rotate(self, angle, resample=NEAREST, expand=0, center=None, translate=None):
         """
         Returns a rotated copy of this image.  This method returns a
         copy of this image, rotated the given number of degrees counter
@@ -1575,48 +1572,81 @@ class Image(object):
         :param expand: Optional expansion flag.  If true, expands the output
            image to make it large enough to hold the entire rotated image.
            If false or omitted, make the output image the same size as the
-           input image.
+           input image.  Note that the expand flag assumes rotation around
+           the center and no translation.
+        :param center: Optional center of rotation (a 2-tuple).  Origin is
+           the upper left corner.  Default is the center of the image.
+        :param translate: An optional post-rotate translation (a 2-tuple).
         :returns: An :py:class:`~PIL.Image.Image` object.
         """
 
         angle = angle % 360.0
 
-        # Fast paths regardless of filter
-        if angle == 0:
-            return self.copy()
-        if angle == 180:
-            return self.transpose(ROTATE_180)
-        if angle == 90 and expand:
-            return self.transpose(ROTATE_90)
-        if angle == 270 and expand:
-            return self.transpose(ROTATE_270)
+        # Fast paths regardless of filter, as long as we're not
+        # translating or changing the center. 
+        if not (center or translate):
+            if angle == 0:
+                return self.copy()
+            if angle == 180:
+                return self.transpose(ROTATE_180)
+            if angle == 90 and expand:
+                return self.transpose(ROTATE_90)
+            if angle == 270 and expand:
+                return self.transpose(ROTATE_270)
+
+        # Calculate the affine matrix.  Note that this is the reverse
+        # transformation (from destination image to source) because we
+        # want to interpolate the (discrete) destination pixel from
+        # the local area around the (floating) source pixel.
+
+        # The matrix we actually want (note that it operates from the right):
+        # (1, 0, tx)   (1, 0, cx)   ( cos a, sin a, 0)   (1, 0, -cx)
+        # (0, 1, ty) * (0, 1, cy) * (-sin a, cos a, 0) * (0, 1, -cy)
+        # (0, 0,  1)   (0, 0,  1)   (     0,     0, 1)   (0, 0,   1)
+
+        # The reverse matrix is thus:
+        # (1, 0, cx)   ( cos -a, sin -a, 0)   (1, 0, -cx)   (1, 0, -tx)
+        # (0, 1, cy) * (-sin -a, cos -a, 0) * (0, 1, -cy) * (0, 1, -ty)
+        # (0, 0,  1)   (      0,      0, 1)   (0, 0,   1)   (0, 0,   1)
+
+        # In any case, the final translation may be updated at the end to
+        # compensate for the expand flag.
+
+        w, h = self.size
+
+        if translate is None:
+            translate = [0, 0]
+        if center is None:
+            center = [w / 2.0, h / 2.0]
 
         angle = - math.radians(angle)
         matrix = [
             round(math.cos(angle), 15), round(math.sin(angle), 15), 0.0,
             round(-math.sin(angle), 15), round(math.cos(angle), 15), 0.0
-            ]
-
-        def transform(x, y, matrix=matrix):
+        ]
+        def transform(x, y, matrix):
             (a, b, c, d, e, f) = matrix
             return a*x + b*y + c, d*x + e*y + f
+        matrix[2], matrix[5] = transform(-center[0] - translate[0], -center[1] - translate[1], matrix)
+        matrix[2] += center[0]
+        matrix[5] += center[1]
 
-        w, h = self.size
         if expand:
             # calculate output size
             xx = []
             yy = []
             for x, y in ((0, 0), (w, 0), (w, h), (0, h)):
-                x, y = transform(x, y)
+                x, y = transform(x, y, matrix)
                 xx.append(x)
                 yy.append(y)
-            w = int(math.ceil(max(xx)) - math.floor(min(xx)))
-            h = int(math.ceil(max(yy)) - math.floor(min(yy)))
+            nw = int(math.ceil(max(xx)) - math.floor(min(xx)))
+            nh = int(math.ceil(max(yy)) - math.floor(min(yy)))
 
-        # adjust center
-        x, y = transform(w / 2.0, h / 2.0)
-        matrix[2] = self.size[0] / 2.0 - x
-        matrix[5] = self.size[1] / 2.0 - y
+            # We multiply a translation matrix from the right.  Because of its
+            # special form, this is the same as taking the image of the translation vector
+            # as new translation vector.
+            matrix[2], matrix[5] = transform(-(nw - w) / 2.0, -(nh - h) / 2.0, matrix)
+            w, h = nw, nh
 
         return self.transform((w, h), AFFINE, matrix, resample)
 
@@ -1660,7 +1690,7 @@ class Image(object):
             if isinstance(fp, Path):
                 filename = str(fp)
                 open_fp = True
-        elif hasattr(fp, "name") and isPath(fp.name):
+        if not filename and hasattr(fp, "name") and isPath(fp.name):
             # only set the name for metadata purposes
             filename = fp.name
 
@@ -1997,8 +2027,8 @@ def _check_size(size):
         raise ValueError("Size must be a tuple")
     if len(size) != 2:
         raise ValueError("Size must be a tuple of length 2")
-    if size[0] <= 0 or size[1] <= 0:
-        raise ValueError("Width and Height must be > 0")
+    if size[0] < 0 or size[1] < 0:
+        raise ValueError("Width and Height must be => 0")
 
     return True
 
@@ -2164,7 +2194,7 @@ def fromarray(obj, mode=None):
             typekey = (1, 1) + shape[2:], arr['typestr']
             mode, rawmode = _fromarray_typemap[typekey]
         except KeyError:
-            # print typekey
+            # print(typekey)
             raise TypeError("Cannot handle this data type")
     else:
         rawmode = mode
