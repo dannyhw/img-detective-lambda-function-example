@@ -13,3 +13,7 @@ def save_index(hashes, identifier):
         print("stored successfully")
     else:
         print("failed to store index")
+
+
+def query_index(hashes):
+    None
