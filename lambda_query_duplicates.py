@@ -1,4 +1,5 @@
 from __future__ import print_function
+
 import imagedetective.detective as detective
 import imagedetective.elastic_index_helper as elastic
 

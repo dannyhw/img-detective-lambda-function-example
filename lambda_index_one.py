@@ -1,8 +1,7 @@
 from __future__ import print_function
 
-
-import imagedetective.elastic_index_helper as elastic
 import imagedetective.detective as detective
+import imagedetective.elastic_index_helper as elastic
 
 
 def lambda_handler(event, context):
