@@ -1,28 +1,11 @@
 from __future__ import print_function
 import imagedetective.detective as detective
+import imagedetective.elastic_index_helper as elastic
 
 
 def lambda_handler(event, context):
     hashes = detective.prepare_evidence(event)
-    # print(hashes)
-
-    full_query = {
-        'bool': {
-            'must': {
-                'term': {
-                    'data_type': 'full'
-                }
-            },
-            'minimum_should_match': "75%",
-            'should': []
-        }
-    }
-    hash_type = 'dhash'
-    these_hashes = [key for key in hashes.keys() if hash_type in key]
-    for hash_key in these_hashes:
-        term = {'term': {hash_key: hashes[hash_key]}}
-        full_query['bool']['should'].append(term)
-    print(full_query)
+    print(elastic.query_index(hashes))
 
 
 def main():
