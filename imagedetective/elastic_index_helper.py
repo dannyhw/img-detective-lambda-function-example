@@ -1,10 +1,17 @@
-import elasticsearch
+from elasticsearch import Elasticsearch, RequestsHttpConnection
+from requests_aws4auth import AWS4Auth
 
-ELASTICSEARCH_HOST = "localhost"
-ELASTICSEARCH_PORT = "9200"
-es = elasticsearch.Elasticsearch([{'host': ELASTICSEARCH_HOST,
-                                   'port': ELASTICSEARCH_PORT}])
-INDEX_NAME = "image-detective-test"
+host = 'search-image-detective-c2x7sc3cfwdlmc2gw5qpca4pwa.eu-central-1.es.amazonaws.com'
+awsauth = AWS4Auth('', '', 'eu-central-1', 'es')
+es = Elasticsearch(
+    hosts=[{'host': host, 'port': 443}],
+    http_auth=awsauth,
+    use_ssl=True,
+    verify_certs=True,
+    connection_class=RequestsHttpConnection
+)
+# print(es.info())
+INDEX_NAME = "image-detective-hackathon"
 
 
 def save_index(hashes, identifier):
