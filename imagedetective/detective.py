@@ -1,7 +1,10 @@
 import os
-import urllib
 
 import hash_generator
+import requests
+
+requests.packages.urllib3.disable_warnings()
+
 LOCAL_IMAGES = "/tmp/images/"
 
 
@@ -16,19 +19,15 @@ def parse_s3_url(s3_url):
     return file_name, bucket_name, s3_key
 
 
-def s3_key_from_s3_url(s3_url):
-    return '/'.join(s3_url.split('/')[4:])
-
-
-def file_name_from_s3_url(s3_url):
-    return s3_url.split('/')[-1]
-
-
 def save_image_from_s3_locally(s3_url, file_name):
     if not os.path.exists(LOCAL_IMAGES):
         os.mkdir(LOCAL_IMAGES)
     image_path = LOCAL_IMAGES + file_name
-    urllib.urlretrieve(s3_url, image_path)
+    # urlretrieve(s3_url, image_path)
+
+    img_data = requests.get(s3_url).content
+    with open(image_path, 'wb') as handler:
+        handler.write(img_data)
     return image_path
 
 
