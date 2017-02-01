@@ -1,3 +1,4 @@
+import base64
 import os
 
 import hash_generator
@@ -23,7 +24,6 @@ def save_image_from_s3_locally(s3_url, file_name):
     if not os.path.exists(LOCAL_IMAGES):
         os.mkdir(LOCAL_IMAGES)
     image_path = LOCAL_IMAGES + file_name
-    # urlretrieve(s3_url, image_path)
 
     img_data = requests.get(s3_url).content
     with open(image_path, 'wb') as handler:
@@ -31,8 +31,21 @@ def save_image_from_s3_locally(s3_url, file_name):
     return image_path
 
 
+def get_url_from_event(event):
+    s3_url = ''
+    if 's3_url' in event:
+        s3_url = event['s3_url']
+        print("Url from direct lambda call: ", s3_url)
+    else:
+        record = event["Records"][0]
+        if 'kinesis' in record:
+            s3_url = base64.b64decode(record['kinesis']['data'])
+            print("Url from  Kenesis: ", s3_url)
+    return s3_url
+
+
 def prepare_evidence(event):
-    s3_url = event['s3_url']
+    s3_url = get_url_from_event(event)
     if 'hash_types' in event:
         hash_types = event['hash_types']
     else:
