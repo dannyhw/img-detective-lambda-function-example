@@ -10,17 +10,6 @@ HASH_FUNCTIONS = {
 }
 
 
-# def get_image_hashes(path_to_file, hash_types):
-#     image_hashes = {}
-#     with Image.open(path_to_file) as img:
-#         for hash_type in hash_types:
-#             image_hashes[hash_type] = []
-#             this_hash = HASH_FUNCTIONS[hash_type](img).hash.tolist()
-#             for hashrow in this_hash:
-#                 image_hashes[hash_type].extend(hashrow)
-
-#     return image_hashes
-
 def get_image_hashes(path_to_file, hash_types):
     image_hashes = {}
     with Image.open(path_to_file) as img:
