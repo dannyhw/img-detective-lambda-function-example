@@ -6,7 +6,8 @@ import imagedetective.elastic_index_helper as elastic
 
 def lambda_handler(event, context):
     hashes = detective.prepare_evidence(event)
-    elastic.save_index(hashes, event['s3_url'])
+    s3_url = detective.get_url_from_event(event)
+    elastic.save_index(hashes, s3_url)
 
 
 def main():
