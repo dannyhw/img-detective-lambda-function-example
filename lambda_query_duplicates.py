@@ -20,11 +20,11 @@ def lambda_handler(event, context):
     if url in suspects:
         suspects.remove(url)
 
-    return suspects
+    return {'suspects': suspects}
 
 
 def main():
-    s3_link = 'https://s3-eu-west-1.amazonaws.com/adamtui/2015_6/20_7/dc9ee2c7-a8bd-40a8-bf80-a4bd007da9a5/AC9953935_MAJ_ALC_34131.jpg'
+    s3_link = 'https://s3-eu-west-1.amazonaws.com/adamtui/2016_10/31_14/d36e3561-50f8-4884-9795-a6b000eca6b1/IL241342Preview.jpg'
     event = {
                 's3_url': s3_link,
                 'hash_types': ['ahash', 'phash', 'dhash']
