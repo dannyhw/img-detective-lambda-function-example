@@ -23,11 +23,11 @@ def save_index(hashes, identifier):
         print("failed to store index")
 
 
-def query_index(hashes):
+def query_index(hashes, duplicate_threshold):
     full_query = {
         "query": {
             "bool": {
-                'minimum_should_match': "75%",
+                'minimum_should_match': duplicate_threshold,
                 "should": []
             }
         }

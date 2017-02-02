@@ -6,7 +6,13 @@ import imagedetective.elastic_index_helper as elastic
 
 def lambda_handler(event, context):
     hashes = detective.prepare_evidence(event)
-    print(elastic.query_index(hashes))
+
+    if 'duplicate_threshold' in event:
+        duplicate_threshold = event['duplicate_threshold']
+    else:
+        duplicate_threshold = "75%"
+
+    print(elastic.query_index(hashes, duplicate_threshold))
 
 
 def main():
