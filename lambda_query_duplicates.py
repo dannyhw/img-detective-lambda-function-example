@@ -8,7 +8,7 @@ def lambda_handler(event, context):
     hashes = detective.prepare_evidence(event)
 
     if 'duplicate_threshold' in event:
-        duplicate_threshold = event['duplicate_threshold']
+        duplicate_threshold = event['duplicate_threshold'] + "%"
     else:
         duplicate_threshold = "75%"
 
