@@ -39,6 +39,8 @@ def query_index(hashes, duplicate_threshold):
         term = {'term': {hash_key: hashes[hash_key]}}
         full_query['query']['bool']['should'].append(term)
 
+    print full_query
+
     query_result = es.search(index=INDEX_NAME, doc_type='hash',
                              body=full_query, size=500)
     return [result_doc['_id'] for result_doc in query_result['hits']['hits']]
