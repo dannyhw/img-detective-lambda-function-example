@@ -12,7 +12,15 @@ def lambda_handler(event, context):
     else:
         duplicate_threshold = "75%"
 
-    print(elastic.query_index(hashes, duplicate_threshold))
+    suspects = elastic.query_index(hashes, duplicate_threshold)
+    url = detective.get_url_from_event(event)
+
+    print("suspects before removing same url", suspects)
+
+    if url in suspects:
+        suspects.remove(url)
+
+    return suspects
 
 
 def main():
