@@ -12,7 +12,10 @@ def lambda_handler(event, context):
     else:
         duplicate_threshold = "75%"
 
-    print(elastic.query_index(hashes, duplicate_threshold))
+    suspects = elastic.query_index(hashes, duplicate_threshold)
+    print(suspects)
+
+    return suspects
 
 
 def main():
