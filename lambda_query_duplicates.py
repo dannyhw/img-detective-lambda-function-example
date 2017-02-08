@@ -5,6 +5,8 @@ import imagedetective.elastic_index_helper as elastic
 
 
 def lambda_handler(event, context):
+    print(event)
+
     hashes = detective.prepare_evidence(event)
 
     if 'duplicate_threshold' in event:
@@ -24,10 +26,10 @@ def lambda_handler(event, context):
 
 
 def main():
-    s3_link = 'https://s3-eu-west-1.amazonaws.com/adamtui/2016_10/31_14/d36e3561-50f8-4884-9795-a6b000eca6b1/IL241342Preview.jpg'
     event = {
-                's3_url': s3_link,
-                'hash_types': ['ahash', 'phash', 'dhash']
+                "s3_url": "https://s3.eu-central-1.amazonaws.com/tuichhackathon/image-detective/LIB_SHU_12_F995_RFPreview.jpg",
+                "hash_types": ["ahash", "phash", "dhash"],
+                "duplicate_threshold": "82"
             }
     lambda_handler(event, None)
 
