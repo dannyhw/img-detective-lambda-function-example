@@ -8,3 +8,5 @@ provided explicitly.
 
 The file lambda_index_one.py contains the code for indexing a single image.
 The hash generating code is in the imagedetective folder.
+
+to test the function try running `python lambda_index_one.py`
